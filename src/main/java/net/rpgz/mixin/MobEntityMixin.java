@@ -1,59 +1,75 @@
 package net.rpgz.mixin;
 
-import net.minecraft.core.BlockPos;
+import net.minecraft.entity.EntityPose;
+import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.mob.FlyingEntity;
+import net.minecraft.entity.mob.MobEntity;
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.ShovelItem;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
+import net.minecraft.util.ActionResult;
+import net.minecraft.util.Hand;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Box;
+import net.minecraft.util.math.MathHelper;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.SimpleContainer;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.FlyingMob;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.phys.AABB;
+import net.minecraft.world.World;
 import net.rpgz.access.InventoryAccess;
 import net.rpgz.init.ConfigInit;
 import net.rpgz.init.TagInit;
-import net.rpgz.screen.MobEntityScreenHandler;
+import net.rpgz.screen.MobEntityContainerMenu;
 import net.rpgz.util.RpgHelper;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.logging.Level;
 import java.util.stream.StreamSupport;
 
-@Mixin(net.minecraft.world.entity.Mob.class)
-public abstract class Mob extends LivingEntity implements InventoryAccess {
+@Mixin(MobEntity.class)
+public abstract class MobEntityMixin extends LivingEntity implements InventoryAccess {
 
     private SimpleContainer inventory = new SimpleContainer(9);
 
-    public Mob(EntityType<? extends LivingEntity> entityType, Level level) {
-        super(entityType, level);
+    public MobEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
+        super(entityType, world);
     }
 
     @Override
     public void tickMovement() {
         if (this.deathTime > 19) {
-            AABB box = this.getBoundingBox();
-            BlockPos blockPos = BlockPos.containing(box.getCenter().x, box.minY, box.getCenter().z);
-            if (this.level().getBlockState(blockPos).isAir()) {
-                if ((Object) this instanceof FlyingMob) {
+            Box box = this.getBoundingBox();
+            BlockPos blockPos = BlockPos.ofFloored(box.getCenter().getX(), box.minY, box.getCenter().getZ());
+            if (this.getWorld().getBlockState(blockPos).isAir()) {
+                if ((Object) this instanceof FlyingEntity) {
                     this.setPos(this.getX(), this.getY() - 0.25D, this.getZ());
-                } else if (this.getDeltaMovement().y > 0) {
-                    this.setPos(this.getX(), this.getY() - (Math.min(this.getDeltaMovement().y, 0.8D)), this.getZ());
-                } else if (this.getDeltaMovement().y < 0) {
-                    this.setPos(this.getX(), this.getY() + (Math.max(this.getDeltaMovement().y, -0.8D)) + (this.getDeltaMovement().y > -0.2D ? -0.4D : 0.0D), this.getZ());
+                } else if (this.getVelocity().y > 0) {
+                    this.setPos(this.getX(), this.getY() - (this.getVelocity().y > 0.8D ? 0.8D : this.getVelocity().y), this.getZ());
+                } else if (this.getVelocity().y < 0) {
+                    this.setPos(this.getX(), this.getY() + (this.getVelocity().y < -0.8D ? -0.8D : this.getVelocity().y) + (this.getVelocity().y > -0.2D ? -0.4D : 0.0D), this.getZ());
                 } else {
                     this.setPos(this.getX(), this.getY() - 0.1D, this.getZ());
                 }
             } else
-                // Water floating
-                if (this.wasTouchingWater) {
-                    if (ConfigInit.CONFIG.surfacing_in_water)
-                        this.setPos(this.getX(), this.getY() + 0.03D, this.getZ());
-                    if (this.(this.level().getFluidState(this.getBlockPosBelowThatAffectsMyMovement())))
-                        this.setPos(this.getX(), this.getY() + 0.03D, this.getZ());
-                    else if (this.level().containsFluid(box.offset(0.0D, -box.getYLength() + (box.getYLength() / 5), 0.0D)) && !ConfigInit.CONFIG.surfacing_in_water)
-                        this.setPos(this.getX(), this.getY() - 0.05D, this.getZ());
-                }
+            // Water floating
+            if (this.getWorld().containsFluid(box.offset(0.0D, box.getYLength(), 0.0D))) {
+                if (ConfigInit.CONFIG.surfacing_in_water)
+                    this.setPos(this.getX(), this.getY() + 0.03D, this.getZ());
+                if (this.canWalkOnFluid(this.getWorld().getFluidState(this.getBlockPos())))
+                    this.setPos(this.getX(), this.getY() + 0.03D, this.getZ());
+                else if (this.getWorld().containsFluid(box.offset(0.0D, -box.getYLength() + (box.getYLength() / 5), 0.0D)) && !ConfigInit.CONFIG.surfacing_in_water)
+                    this.setPos(this.getX(), this.getY() - 0.05D, this.getZ());
+            }
         } else {
             super.tickMovement();
         }
@@ -61,19 +77,19 @@ public abstract class Mob extends LivingEntity implements InventoryAccess {
 
     @SuppressWarnings("deprecation")
     @Override
-    protected void tickDeath() {
+    protected void updatePostDeath() {
         ++this.deathTime;
         if (this.deathTime == 1) {
             if (this.isOnFire())
-                this.extinguishFire();
+                this.extinguish();
             if (this.getVehicle() != null)
                 this.stopRiding();
         }
 
         if (this.deathTime >= 20) {
             // Has to get set on server and client
-            AABB newBoundingBox = new AABB(this.getX() - (this.getBbWidth() / 3.0F), this.getY() - (this.getBbWidth() / 3.0F), this.getZ() - (this.getWidth() / 3.0F),
-                    this.getX() + (this.getBbWidth() / 1.5F), this.getY() + (this.getBbWidth() / 1.5F), this.getZ() + (this.getWidth() / 1.5F));
+            Box newBoundingBox = new Box(this.getX() - (this.getWidth() / 3.0F), this.getY() - (this.getWidth() / 3.0F), this.getZ() - (this.getWidth() / 3.0F),
+                    this.getX() + (this.getWidth() / 1.5F), this.getY() + (this.getWidth() / 1.5F), this.getZ() + (this.getWidth() / 1.5F));
             if ((this.getDimensions(EntityPose.STANDING).height < 1.0F && this.getDimensions(EntityPose.STANDING).width < 1.0F)
                     || (this.getDimensions(EntityPose.STANDING).width / this.getDimensions(EntityPose.STANDING).height) > 1.395F) {
                 this.setBoundingBox(newBoundingBox);
@@ -86,8 +102,8 @@ public abstract class Mob extends LivingEntity implements InventoryAccess {
             // Shulker has trouble
             // this.checkBlockCollision(); //Doesnt solve problem
             // if (this.isInsideWall()) {} // Doenst work
-            if (!this.level().isClientSide()) {
-                AABB box = this.getBoundingBox();
+            if (!this.getWorld().isClient()) {
+                Box box = this.getBoundingBox();
                 BlockPos blockPos = BlockPos.ofFloored(box.minX + 0.001D, box.minY + 0.001D, box.minZ + 0.001D).up();
                 BlockPos blockPos2 = BlockPos.ofFloored(box.maxX - 0.001D, box.maxY - 0.001D, box.maxZ - 0.001D);
 
@@ -108,17 +124,17 @@ public abstract class Mob extends LivingEntity implements InventoryAccess {
                 // }
 
                 // New method to check if inside block
-                AABB checkBox = new AABB(box.maxX, box.maxY, box.maxZ, box.maxX + 0.001D, box.maxY + 0.001D, box.maxZ + 0.001D);
-                AABB checkBoxTwo = new AABB(box.minX, box.maxY, box.minZ, box.minX + 0.001D, box.maxY + 0.001D, box.minZ + 0.001D);
-                AABB checkBoxThree = new AABB(box.maxX - (box.getXsize() / 3D), box.maxY, box.maxZ - (box.getZsize() / 3D), box.maxX + 0.001D - (box.getXsize() / 3D), box.maxY + 0.001D,
-                        box.maxZ + 0.001D - (box.getZsize() / 3D));
-                if (this.level().(blockPos, blockPos2)) {
+                Box checkBox = new Box(box.maxX, box.maxY, box.maxZ, box.maxX + 0.001D, box.maxY + 0.001D, box.maxZ + 0.001D);
+                Box checkBoxTwo = new Box(box.minX, box.maxY, box.minZ, box.minX + 0.001D, box.maxY + 0.001D, box.minZ + 0.001D);
+                Box checkBoxThree = new Box(box.maxX - (box.getXLength() / 3D), box.maxY, box.maxZ - (box.getZLength() / 3D), box.maxX + 0.001D - (box.getXLength() / 3D), box.maxY + 0.001D,
+                        box.maxZ + 0.001D - (box.getZLength() / 3D));
+                if (this.getWorld().isRegionLoaded(blockPos, blockPos2)) {
                     if (!this.inventory.isEmpty()
                             && (((!StreamSupport.stream(this.getWorld().getBlockCollisions(this, checkBox).spliterator(), false).allMatch(VoxelShape::isEmpty)
-                            || !StreamSupport.stream(this.getWorld().getBlockCollisions(this, checkBoxThree).spliterator(), false).allMatch(VoxelShape::isEmpty))
-                            && (!StreamSupport.stream(this.getWorld().getBlockCollisions(this, checkBoxTwo).spliterator(), false).allMatch(VoxelShape::isEmpty)
-                            || !StreamSupport.stream(this.getWorld().getBlockCollisions(this, checkBoxThree).spliterator(), false).allMatch(VoxelShape::isEmpty)))
-                            || this.isBaby() || (ConfigInit.CONFIG.drop_unlooted && this.deathTime > ConfigInit.CONFIG.drop_after_ticks))
+                                    || !StreamSupport.stream(this.getWorld().getBlockCollisions(this, checkBoxThree).spliterator(), false).allMatch(VoxelShape::isEmpty))
+                                    && (!StreamSupport.stream(this.getWorld().getBlockCollisions(this, checkBoxTwo).spliterator(), false).allMatch(VoxelShape::isEmpty)
+                                            || !StreamSupport.stream(this.getWorld().getBlockCollisions(this, checkBoxThree).spliterator(), false).allMatch(VoxelShape::isEmpty)))
+                                    || this.isBaby() || (ConfigInit.CONFIG.drop_unlooted && this.deathTime > ConfigInit.CONFIG.drop_after_ticks))
                             || this.getType().isIn(TagInit.EXCLUDED_ENTITIES) || ConfigInit.CONFIG.excluded_entities.contains(this.getType().toString().replace("entity.", "").replace(".", ":"))) {
 
                         this.inventory.clearToList().forEach(this::dropStack);
@@ -179,14 +195,14 @@ public abstract class Mob extends LivingEntity implements InventoryAccess {
 
     @Inject(method = "Lnet/minecraft/entity/mob/MobEntity;isAffectedByDaylight()Z", at = @At("HEAD"), cancellable = true)
     private void isAffectedByDaylightMixin(CallbackInfoReturnable<Boolean> info) {
-        if (this.isDeadOrDying()) {
+        if (this.isDead()) {
             info.setReturnValue(false);
         }
     }
 
     @Override
     public void addInventoryItem(ItemStack stack) {
-        RpgHelper.addStackToInventory(() (Object) this, stack, this.level());
+        RpgHelper.addStackToInventory((MobEntity) (Object) this, stack, this.getWorld());
     }
 
     @Override
@@ -217,7 +233,7 @@ public abstract class Mob extends LivingEntity implements InventoryAccess {
                         }
                         this.inventory.clear();
                     } else {
-                        player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, inv, p) -> new MobEntityScreenHandler(syncId, p.getInventory(), this.inventory), Text.literal("")));
+                        player.openHandledScreen(new SimpleNamedScreenHandlerFactory((syncId, inv, p) -> new MobEntityContainerMenu(syncId, p.getInventory(), this.inventory), Text.literal("")));
                     }
                     return ActionResult.SUCCESS;
                 }

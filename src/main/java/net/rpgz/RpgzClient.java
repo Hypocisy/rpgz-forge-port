@@ -1,6 +1,10 @@
 package net.rpgz;
 
-public class RpgzClient {
+import net.fabricmc.api.ClientModInitializer;
+
+public class RpgzClient implements ClientModInitializer {
+
+    @Override
     public void onInitializeClient() {
     }
 

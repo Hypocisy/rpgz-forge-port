@@ -1,21 +1,26 @@
 package net.rpgz.init;
 
-import net.minecraft.registry.Registries;
-import net.minecraft.registry.Registry;
-import net.minecraft.sound.SoundEvent;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvent;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+import net.rpgz.RpgzMain;
 
 public class SoundInit {
 
-    public static final Identifier LOOT_SOUND = new Identifier("rpgz:loot");
-    public static final Identifier COIN_LOOT_SOUND = new Identifier("rpgz:coin_loot");
+    public static final DeferredRegister<SoundEvent> SOUND_EVENTS =
+            DeferredRegister.create(ForgeRegistries.SOUND_EVENTS, RpgzMain.MOD_ID);
+    public static final RegistryObject<SoundEvent> LOOT_SOUND_EVENT = registerSoundEvents("loot");
+    public static final RegistryObject<SoundEvent> COIN_LOOT_SOUND_EVENT = registerSoundEvents("coin_loot");
 
-    public static SoundEvent LOOT_SOUND_EVENT = SoundEvent.of(LOOT_SOUND);
-    public static SoundEvent COIN_LOOT_SOUND_EVENT = SoundEvent.of(COIN_LOOT_SOUND);
+    private static RegistryObject<SoundEvent> registerSoundEvents(String name) {
+        return SOUND_EVENTS.register(name, () -> SoundEvent.createVariableRangeEvent(new ResourceLocation(RpgzMain.MOD_ID, name)));
+    }
 
-    public static void init() {
-        Registry.register(Registries.SOUND_EVENT, LOOT_SOUND, LOOT_SOUND_EVENT);
-        Registry.register(Registries.SOUND_EVENT, COIN_LOOT_SOUND, COIN_LOOT_SOUND_EVENT);
+    public static void register(IEventBus eventBus) {
+        SOUND_EVENTS.register(eventBus);
     }
 
 }
