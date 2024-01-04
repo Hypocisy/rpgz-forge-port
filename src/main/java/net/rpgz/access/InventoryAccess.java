@@ -7,5 +7,5 @@ public interface InventoryAccess {
 
     public SimpleContainer getInventory();
 
-    public void addInventoryItem(ItemStack stack);
+    public void rpgz$addInventoryItem(ItemStack stack);
 }

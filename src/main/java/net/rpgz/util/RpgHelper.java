@@ -16,7 +16,7 @@ public class RpgHelper {
             if (isSpoiledZLoaded) {
                 SpoiledUtil.setItemStackSpoilage(level, stack, null);
             }
-            ((InventoryAccess) mobEntity).getInventory().addStack(stack);
+            ((InventoryAccess) mobEntity).getInventory().addItem(stack);
         }
     }
 

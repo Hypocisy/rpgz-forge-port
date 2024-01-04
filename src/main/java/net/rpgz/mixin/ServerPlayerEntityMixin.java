@@ -1,13 +1,13 @@
 package net.rpgz.mixin;
 
 import com.mojang.datafixers.util.Either;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Unit;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.monster.Vindicator;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -16,18 +16,18 @@ import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-@Mixin(ServerPlayerEntity.class)
+@Mixin(ServerPlayer.class)
 public class ServerPlayerEntityMixin {
 
-    @Inject(method = "trySleep", at = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z"), locals = LocalCapture.CAPTURE_FAILSOFT)
-    private void trySleepMixin(BlockPos pos, CallbackInfoReturnable<Either<PlayerEntity.SleepFailureReason, Unit>> info, Direction direction, double d, double e, Vec3d vec3d,
-            List<HostileEntity> list) {
+    @Inject(method = "startSleepInBed", at = @At(value = "INVOKE", target = "Ljava/util/List;isEmpty()Z"), locals = LocalCapture.CAPTURE_FAILSOFT)
+    private void startSleepingMixin(BlockPos blockPos, CallbackInfoReturnable<Either<Player.BedSleepingProblem, Unit>> cir, Optional optAt, Player.BedSleepingProblem ret, Direction direction, double d0, double d1, Vec3 vec3, List list) {
         if (!list.isEmpty()) {
-            List<HostileEntity> removeList = new ArrayList<HostileEntity>();
+            List<Vindicator> removeList = new ArrayList<>();
             for (int o = 0; o < list.size(); ++o) {
-                HostileEntity entityFromList = (HostileEntity) list.get(o);
-                if (entityFromList.isDead()) {
+                Vindicator entityFromList = (Vindicator) list.get(o);
+                if (entityFromList.isDeadOrDying()) {
                     removeList.add(entityFromList);
                 }
             }
