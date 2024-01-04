@@ -1,0 +1,149 @@
+buildscript {
+    repositories {
+        maven { url = 'https://files.minecraftforge.net/maven' }
+		maven { url = 'https://repo.spongepowered.org/maven' }
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '5.1.+', changing: true
+		classpath 'org.parchmentmc:librarian:1.+'
+		classpath group: 'org.spongepowered', name: 'mixingradle', version: '0.7-SNAPSHOT'
+    }
+}
+
+plugins {
+  id "com.matthewprenger.cursegradle" version "1.4.0"
+}
+
+apply plugin: 'net.minecraftforge.gradle'
+// Only edit below this line, the above code adds and enables the necessary things for Forge to be setup.
+apply plugin: 'eclipse'
+apply plugin: 'maven-publish'
+apply plugin: 'org.parchmentmc.librarian.forgegradle'
+apply plugin: 'org.spongepowered.mixin'
+
+mixin {
+    add sourceSets.main, modId+".refmap.json"
+}
+
+archivesBaseName = project.archives_base_name
+version = project.mod_version
+group = project.maven_group
+
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+println('Java: ' + System.getProperty('java.version') + ' JVM: ' + System.getProperty('java.vm.version') + '(' + System.getProperty('java.vendor') + ') Arch: ' + System.getProperty('os.arch'))
+println('Mod Name: ' + modFilename + ', Mod Version: ' + mod_version + ', Minecraft Version: ' + modMinecraftVersion + ', Forge Version: ' + modForgeVersion)
+minecraft {
+    mappings channel: mappingsChannel, version: mappingsVersion
+    accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
+    runs {
+        client {
+            workingDirectory project.file('run/client')
+            property 'forge.logging.markers', 'REGISTRIES'
+			property 'mixin.env.remapRefMap', 'true'
+			property 'mixin.env.refMapRemappingFile', "${buildDir}/createSrgToMcp/output.srg"
+			arg "-mixin.config="+modId+".mixins.json"
+
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                modId {
+                    source sourceSets.main
+                }
+            }
+        }
+
+        server {
+            workingDirectory project.file('run/server')
+            property 'forge.logging.markers', 'REGISTRIES'
+			property 'mixin.env.remapRefMap', 'true'
+			property 'mixin.env.refMapRemappingFile', "${buildDir}/createSrgToMcp/output.srg"
+			arg "-mixin.config="+modId+".mixins.json"
+
+            // Recommended logging level for the console
+            property 'forge.logging.console.level', 'debug'
+
+            mods {
+                modId {
+                    source sourceSets.main
+                }
+            }
+        }
+    }
+}
+
+repositories {
+	maven {  url = "https://repo.spongepowered.org/maven" } // mixin
+	maven {url "https://www.cursemaven.com"}
+    maven {url "https://maven.shedaniel.me/"} // cloth config
+}
+
+dependencies {
+	minecraft 'net.minecraftforge:forge:' + modMinecraftVersion + '-' + modForgeVersion
+	annotationProcessor "org.spongepowered:mixin:"+modMixinVersion+":processor"
+	implementation "org.spongepowered:mixin:"+modMixinVersion+""
+	implementation fileTree(include: ['*.jar'], dir: 'libs')
+	implementation fg.deobf("me.shedaniel.cloth:cloth-config-forge:"+clothConfigVersion)
+
+}
+
+tasks.withType(JavaCompile) {
+	options.encoding = "UTF-8"
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = "sources"
+	from sourceSets.main.allSource
+}
+
+jar {
+	from "LICENSE"
+    manifest {
+        attributes([
+            // Existing properties here
+            "MixinConfigs": modId+".mixins.json"
+        ])
+    }
+}
+
+curseforge {
+    project {
+    	id = modCurseId
+		apiKey = "$System.env.CURSEFORGEKEY"
+		changelog = file('changelog.md')
+		releaseType = 'release'
+		addGameVersion(modMinecraftVersion)
+        addGameVersion("Forge")
+        relations {
+      		requiredDependency 'cloth-config'
+		}
+		mainArtifact(jar) {
+			displayName = modFilename+"-$project.version"
+		}
+	}
+}
+
+// configure the maven publication
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			// add all the jars that should be included when publishing to maven
+			//artifact(remapJar) {
+			//	builtBy remapJar
+			//}
+			//artifact(sourcesJar) {
+			//	builtBy remapSourcesJar
+			//}
+		}
+	}
+
+	// select the repositories you want to publish to
+	repositories {
+		// uncomment to publish to the local maven
+		// mavenLocal()
+
+
+	}
+}
