@@ -1,40 +1,40 @@
 package net.rpgz.mixin.client;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.render.LightmapTextureManager;
-import net.minecraft.client.render.entity.EntityRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.MathHelper;
+import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.client.renderer.entity.EntityRenderer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.phys.AABB;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Environment(EnvType.CLIENT)
+@OnlyIn(Dist.CLIENT)
 @Mixin(EntityRenderer.class)
 public abstract class EntityRendererMixin<T extends Entity> {
 
-    @Inject(method = "getLight", at = @At("TAIL"), cancellable = true)
+    @Inject(method = "getPackedLightCoords", at = @At("TAIL"), cancellable = true)
     private final void getLightMixin(T entity, float tickDelta, CallbackInfoReturnable<Integer> info) {
-        if (entity instanceof MobEntity mobEntity && mobEntity.isDead()) {
-            Box box = entity.getBoundingBox();
-            BlockPos blockPos = new BlockPos(MathHelper.floor(box.getCenter().getX()), MathHelper.floor(box.maxY), MathHelper.floor(box.getCenter().getZ()));
-            info.setReturnValue(LightmapTextureManager.pack(this.getBlockLight(entity, blockPos), this.getSkyLight(entity, blockPos)));
+        if (entity instanceof Mob mobEntity && mobEntity.isDeadOrDying()) {
+            AABB box = entity.getBoundingBox();
+            BlockPos blockPos = new BlockPos(Mth.floor(box.getCenter().x()), Mth.floor(box.maxY), Mth.floor(box.getCenter().z()));
+            info.setReturnValue(LightTexture.pack(this.getBlockLightLevel(entity, blockPos), this.getSkyLightLevel(entity, blockPos)));
         }
     }
 
     @Shadow
-    protected int getBlockLight(T entity, BlockPos blockPos) {
+    protected int getBlockLightLevel(T entity, BlockPos blockPos) {
         return 0;
     }
 
     @Shadow
-    protected int getSkyLight(T entity, BlockPos pos) {
+    protected int getSkyLightLevel(T entity, BlockPos pos) {
         return 0;
     }
 

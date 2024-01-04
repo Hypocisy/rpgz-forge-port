@@ -1,17 +1,13 @@
 package net.rpgz.mixin.client;
 
-import net.fabricmc.api.EnvType;
-import net.fabricmc.api.Environment;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.render.GameRenderer;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.ProjectileUtil;
-import net.minecraft.util.hit.BlockHitResult;
-import net.minecraft.util.hit.EntityHitResult;
-import net.minecraft.util.hit.HitResult;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
+import net.minecraft.world.phys.*;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Mutable;
@@ -20,31 +16,31 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Environment(EnvType.CLIENT)
+@OnlyIn(Dist.CLIENT)
 @Mixin(GameRenderer.class)
 public class GameRendererMixin {
 
     @Mutable
     @Final
     @Shadow
-    private MinecraftClient client;
+    Minecraft minecraft;
 
-    @Inject(method = "updateTargetedEntity", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiler/Profiler;pop()V"))
+    @Inject(method = "pick", at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V"))
     private void updateTargetedEntityMixin(float tickDelta, CallbackInfo info) {
-        Entity entity = this.client.getCameraEntity();
-        if (this.client.crosshairTarget.getType() == HitResult.Type.BLOCK) {
-            BlockPos pos = ((BlockHitResult) this.client.crosshairTarget).getBlockPos();
-            if (!this.client.world.getBlockState(pos).isFullCube(this.client.world, pos)) {
-                double reachDinstance = (double) this.client.interactionManager.getReachDistance();
-                Vec3d vec3d = this.client.player.getCameraPosVec(tickDelta);
-                Vec3d vec3d2 = this.client.player.getRotationVec(tickDelta);
-                Vec3d vec3d3 = vec3d.add(vec3d2.x * reachDinstance, vec3d2.y * reachDinstance, vec3d2.z * reachDinstance);
-                Box box = entity.getBoundingBox().stretch(vec3d2.multiply(reachDinstance)).expand(1.0D, 1.0D, 1.0D);
-                EntityHitResult entityHitResult = ProjectileUtil.raycast(entity, vec3d, vec3d3, box, (entityx) -> {
-                    return !entityx.isSpectator() && entityx.canHit();
+        Entity entity = this.minecraft.getCameraEntity();
+        if (this.minecraft.hitResult != null && this.minecraft.hitResult.getType() == HitResult.Type.BLOCK) {
+            BlockPos pos = ((BlockHitResult) this.minecraft.hitResult).getBlockPos();
+            if (!this.minecraft.level.getBlockState(pos).isCollisionShapeFullBlock(this.minecraft.level, pos)) {
+                float reachDinstance = this.minecraft.gameMode.getPickRange();
+                Vec3 vec3d = this.minecraft.player.getEyePosition(tickDelta);
+                Vec3 vec3d2 = this.minecraft.player.getViewVector(tickDelta);
+                Vec3 vec3d3 = vec3d.add(vec3d2.x * reachDinstance, vec3d2.y * reachDinstance, vec3d2.z * reachDinstance);
+                AABB box = entity.getBoundingBox().expandTowards(vec3d2.multiply(reachDinstance, reachDinstance, reachDinstance)).inflate(1.0D, 1.0D, 1.0D);
+                EntityHitResult entityHitResult = ProjectileUtil.getEntityHitResult(entity, vec3d, vec3d3, box, (entityx) -> {
+                    return !entityx.isSpectator() && entityx.isPickable();
                 }, 5D);
                 if (entityHitResult != null) {
-                    this.client.crosshairTarget = entityHitResult;
+                    this.minecraft.hitResult = entityHitResult;
                 }
             }
         }

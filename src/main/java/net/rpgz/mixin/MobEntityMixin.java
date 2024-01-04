@@ -2,24 +2,9 @@ package net.rpgz.mixin;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.ShovelItem;
 import net.minecraft.network.chat.Component;
-import net.minecraft.particle.ParticleTypes;
-import net.minecraft.screen.SimpleNamedScreenHandlerFactory;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.util.ActionResult;
-import net.minecraft.util.Hand;
 import net.minecraft.util.Mth;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.SimpleContainer;
@@ -149,7 +134,7 @@ public abstract class MobEntityMixin extends LivingEntity implements InventoryAc
                             || this.isBaby() || (ConfigInit.CONFIG.drop_unlooted && this.deathTime > ConfigInit.CONFIG.drop_after_ticks))
                             || this.getType().is(TagInit.EXCLUDED_ENTITIES) || ConfigInit.CONFIG.excluded_entities.contains(this.getType().toString().replace("entity.", "").replace(".", ":"))) {
 
-                        this.rpgz$inventory.removeAllItems().forEach(this::dropStack);
+                        this.rpgz$inventory.removeAllItems().forEach(this::spawnAtLocation);
                     }
                 }
             }
