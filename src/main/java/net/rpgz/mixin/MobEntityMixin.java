@@ -235,8 +235,6 @@ public abstract class MobEntityMixin extends LivingEntity implements InventoryAc
                     }
                     return InteractionResult.SUCCESS;
                 }
-            } else if ((Object) this instanceof Player) {
-                return super.interactAt(player, hitPos, hand);
             }
             return InteractionResult.SUCCESS;
         }

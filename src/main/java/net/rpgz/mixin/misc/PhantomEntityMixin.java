@@ -19,7 +19,7 @@ public abstract class PhantomEntityMixin extends FlyingMob implements Enemy {
     @Inject(method = "aiStep", at = @At(value = "HEAD"), cancellable = true)
     public void tickMovementMixinPhantom(CallbackInfo info) {
         if (this.deathTime > 0) {
-            super.tick();
+            super.tickDeath();
             info.cancel();
         }
     }

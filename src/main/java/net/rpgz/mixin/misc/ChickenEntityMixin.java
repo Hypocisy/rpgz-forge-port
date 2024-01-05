@@ -13,13 +13,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Chicken.class)
 public abstract class ChickenEntityMixin extends Animal {
     @Shadow
-    public float flapProgress;
+    public float flap;
     @Shadow
-    public float maxWingDeviation;
+    public float flapSpeed;
     @Shadow
-    public float prevMaxWingDeviation;
+    public float oFlapSpeed;
     @Shadow
-    public float prevFlapProgress;
+    public float oFlap;
 
     public ChickenEntityMixin(EntityType<? extends Animal> entityType, Level level) {
         super(entityType, level);
@@ -28,11 +28,11 @@ public abstract class ChickenEntityMixin extends Animal {
     @Inject(method = "aiStep", at = @At(value = "HEAD"), cancellable = true)
     public void aiStepChickenBlaze(CallbackInfo info) {
         if (this.isDeadOrDying()) {
-            super.tick();
-            this.flapProgress = 0.0F;
-            this.maxWingDeviation = 0.0F;
-            this.prevMaxWingDeviation = 0.0F;
-            this.prevFlapProgress = 0.0F;
+            super.tickDeath();
+            this.flap = 0.0F;
+            this.flapSpeed = 0.0F;
+            this.oFlapSpeed = 0.0F;
+            this.oFlap = 0.0F;
             info.cancel();
         }
     }

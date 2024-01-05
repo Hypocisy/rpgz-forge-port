@@ -19,7 +19,7 @@ public abstract class SquidEntityMixin extends WaterAnimal {
     @Inject(method = "aiStep", at = @At(value = "HEAD"), cancellable = true)
     public void tickMovementMixinSquid(CallbackInfo info) {
         if (this.isDeadOrDying()) {
-            super.tick();
+            super.tickDeath();
             info.cancel();
         }
     }

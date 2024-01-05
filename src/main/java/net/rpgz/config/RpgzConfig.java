@@ -10,7 +10,7 @@ import java.util.List;
 
 @Config(name = "rpgz")
 @Config.Gui.Background("minecraft:textures/block/stone.png")
-public class RpgzConfig implements ConfigData {
+public class RpgzConfig implements ConfigData{
 
     public boolean drop_unlooted = false;
     public boolean hopper_extracting = false;

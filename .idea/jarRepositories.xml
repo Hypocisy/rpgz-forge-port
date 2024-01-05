@@ -46,5 +46,10 @@
       <option name="name" value="maven2" />
       <option name="url" value="https://www.cursemaven.com" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="maven4" />
+      <option name="name" value="maven4" />
+      <option name="url" value="https://cursemaven.com" />
+    </remote-repository>
   </component>
 </project>

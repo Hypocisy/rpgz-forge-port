@@ -1,8 +1,11 @@
 package net.rpgz.screen;
 
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.vehicle.AbstractMinecartContainer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
@@ -14,12 +17,12 @@ import org.jetbrains.annotations.NotNull;
 public class MobEntityContainerMenu extends AbstractContainerMenu {
     private final SimpleContainer inventory;
 
-    public MobEntityContainerMenu(int syncId, Inventory playerInventory) {
+    public MobEntityContainerMenu(int syncId, Inventory playerInventory, FriendlyByteBuf extraData) {
         this(syncId, playerInventory, new SimpleContainer());
     }
 
     public MobEntityContainerMenu(int syncId, Inventory playerInventory, SimpleContainer simpleInventory) {
-        super(MenuType.GENERIC_9x1, syncId);
+        super(ModMenuTypes.MOB_ENTITY_CONTAINER_MENU.get(), syncId);
         this.inventory = simpleInventory;
 
         int m;

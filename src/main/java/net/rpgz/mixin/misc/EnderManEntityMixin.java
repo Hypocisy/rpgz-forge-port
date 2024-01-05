@@ -19,7 +19,7 @@ public abstract class EnderManEntityMixin extends Monster implements NeutralMob 
     @Inject(method = "aiStep", at = @At(value = "HEAD"), cancellable = true)
     public void tickMovementMixinEnderMan(CallbackInfo info) {
         if (this.isDeadOrDying()) {
-            super.tick();
+            super.tickDeath();
             info.cancel();
         }
     }

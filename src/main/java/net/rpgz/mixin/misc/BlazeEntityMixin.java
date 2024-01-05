@@ -18,7 +18,7 @@ public abstract class BlazeEntityMixin extends Monster {
     @Inject(method = "aiStep", at = @At(value = "HEAD"), cancellable = true)
     public void tickMovementMixinBlaze(CallbackInfo info) {
         if (this.isDeadOrDying()) {
-            super.tick();
+            super.tickDeath();
             info.cancel();
         }
     }

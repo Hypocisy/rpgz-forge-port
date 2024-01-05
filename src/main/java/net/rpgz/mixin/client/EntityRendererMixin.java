@@ -20,10 +20,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 public abstract class EntityRendererMixin<T extends Entity> {
 
     @Inject(method = "getPackedLightCoords", at = @At("TAIL"), cancellable = true)
-    private final void getLightMixin(T entity, float tickDelta, CallbackInfoReturnable<Integer> info) {
+    private void getLightMixin(T entity, float tickDelta, CallbackInfoReturnable<Integer> info) {
         if (entity instanceof Mob mobEntity && mobEntity.isDeadOrDying()) {
             AABB box = entity.getBoundingBox();
-            BlockPos blockPos = new BlockPos(Mth.floor(box.getCenter().x()), Mth.floor(box.maxY), Mth.floor(box.getCenter().z()));
+            BlockPos blockPos = new BlockPos(Mth.floor(box.getCenter().x()), Mth.floor(box.maxY), Mth.floor(box.getCenter().z())).above(4);
             info.setReturnValue(LightTexture.pack(this.getBlockLightLevel(entity, blockPos), this.getSkyLightLevel(entity, blockPos)));
         }
     }

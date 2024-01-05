@@ -16,7 +16,7 @@ public abstract class ClientLevelMixin {
     @Inject(method = "tickNonPassenger(Lnet/minecraft/world/entity/Entity;)V", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;tick()V"))
     private void tickEntityMixin(Entity entity, CallbackInfo info) {
         if (!entity.isAlive() && entity instanceof Mob) {
-            entity.tickCount = -1; // age has to be 0 or -1 cause of some models (example: guardian)
+            ((Mob) entity).tickCount = -1; // age has to be 0 or -1 cause of some models (example: guardian)
         }
     }
 

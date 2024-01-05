@@ -41,7 +41,7 @@ public abstract class HopperBlockEntityMixin implements InventoryAccess {
                             if (((InventoryAccess) livingEntity).getInventory() != null) {
                                 Direction direction = Direction.DOWN;
                                 info.setReturnValue(isEmptyContainer(((InventoryAccess) livingEntity).getInventory(), direction) ? false
-                                        : getAvailableSlots(((InventoryAccess) livingEntity).getInventory(), direction).anyMatch((i) -> {
+                                        : getSlots(((InventoryAccess) livingEntity).getInventory(), direction).anyMatch((i) -> {
                                     return tryTakeInItemFromSlot(hopper, ((InventoryAccess) livingEntity).getInventory(), i, direction);
                                 }));
                             }
@@ -64,7 +64,7 @@ public abstract class HopperBlockEntityMixin implements InventoryAccess {
     }
 
     @Shadow
-    private static IntStream getAvailableSlots(Container inventory, Direction side) {
+    private static IntStream getSlots(Container inventory, Direction side) {
         return null;
     }
 }
